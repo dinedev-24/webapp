@@ -1,33 +1,27 @@
-import streamlit as st
-import torch
 from transformers import BertForSequenceClassification, BertTokenizer
-import numpy as np
-import pandas as pd
+import torch
+import streamlit as st
 
-# Load your model and tokenizer
-model = BertForSequenceClassification.from_pretrained('C:/Users/Dine24/Downloads/final_model_backup')  # Provide the correct path
-tokenizer = BertTokenizer.from_pretrained('C:/Users/Dine24/Downloads/final_model_backup')  # Provide the correct path
+# Define the path to the model and tokenizer
+model_path = 'C:/Users/Dine24/Downloads/final_model_backup'  # Update the path as required
 
-# Define a function to predict sentiment for a given text
+# Load the model and tokenizer using the .safetensors file
+model = BertForSequenceClassification.from_pretrained(f'{model_path}/model.safetensors')
+tokenizer = BertTokenizer.from_pretrained(f'{model_path}')
+
+# Define the prediction function
 def predict_sentiment(text):
-    encoding = tokenizer(text, truncation=True, padding=True, max_length=128, return_tensors='pt')
+    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     with torch.no_grad():
-        outputs = model(**encoding)
-        logits = outputs.logits
-        predicted_class = torch.argmax(logits, dim=1).item()
+        logits = model(**inputs).logits
+    predicted_class = torch.argmax(logits, dim=-1).item()
     return predicted_class
 
-# Streamlit app interface
-st.title('Sentiment Analysis App')
-st.write("This is a simple app that uses a pre-trained model to classify product review sentiment.")
+# Streamlit app setup
+st.title("Sentiment Analysis App")
+text_input = st.text_area("Enter the text for sentiment analysis:")
 
-# User input
-user_input = st.text_area("Enter a product review:")
-
-if st.button('Predict'):
-    if user_input:
-        prediction = predict_sentiment(user_input)
-        sentiment = "Positive" if prediction == 1 else "Negative" if prediction == 0 else "Neutral"
-        st.write(f"Predicted Sentiment: {sentiment}")
-    else:
-        st.write("Please enter a review to predict.")
+if text_input:
+    sentiment = predict_sentiment(text_input)
+    sentiment_label = "Positive" if sentiment == 1 else "Negative"
+    st.write(f"The sentiment of the text is: {sentiment_label}")
